@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body style="width: 220px; padding: 15px; font-family: sans-serif; background: #222; color: white;">
+
+    <!-- Header with Icon -->
+    <h3 style="margin: 0 0 15px 0; font-size: 16px; display: flex; align-items: center; justify-content: center;">
+        <!-- Sesuaikan nama icon128.png dengan file gambar kamu -->
+        <img src="icon128.png" style="width: 24px; height: 24px; margin-right: 8px; border-radius: 50%;">
+        Vinyl Settings
+    </h3>
+
+    <!-- Toggle Video -->
+    <label
+        style="display: block; margin-bottom: 20px; cursor: pointer; border-bottom: 1px solid #444; padding-bottom: 10px;">
+        <input type="checkbox" id="videoToggle"> Show Video
+    </label>
+
+    <!-- Slider Speed -->
+    <label style="display: block; margin-bottom: 5px; font-size: 13px;">
+        Spin Speed: <b id="speedValue" style="color: #00e676;">6</b> sec/spin
+    </label>
+    <input type="range" id="speedSlider" min="1" max="20" step="1" value="6" style="width: 100%; cursor: pointer;">
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+/* =========================================
+   1. KASET UTAMA (Layar Tengah)
+========================================= */
+ytmusic-player {
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    width: 100% !important;
+    max-width: 65vh !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    position: relative !important;
+
+    /* GAYA BARU: Kaca Blur Pinggiran Luar Kaset */
+    background: rgba(20, 20, 20, 0.3) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border: 2px solid rgba(0, 0, 0, 0.8) !important;
+    /* Batasan hitam tipis elegan */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1) !important;
+
+    overflow: hidden !important;
+    clip-path: circle(50% at 50% 50%) !important;
+    transition: opacity 0.3s ease !important;
+}
+
+/* Sembunyikan wujud kaset raksasa saat di-minimize */
+ytmusic-player[player-ui-state="MINIPLAYER"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: scale(0) !important;
+}
+
+ytmusic-player #song-image,
+ytmusic-player yt-img-shadow,
+ytmusic-player #video-player,
+ytmusic-player .html5-video-container,
+ytmusic-player .html5-video-player {
+    position: static !important;
+    transform: none !important;
+    background: transparent !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* ELEMEN MEDIA DIKECILKAN KE 93% AGAR PINGGIRAN KACA TERLIHAT */
+ytmusic-player video,
+ytmusic-player img,
+#vinyl-skin {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 93% !important;
+    height: 93% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    z-index: 10 !important;
+    transform-origin: center center !important;
+    animation: spinCenter var(--spin-speed, 6s) linear infinite !important;
+    /* Tambahan shadow dalam untuk memisahkan gambar dengan bingkai kaca */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.8) !important;
+}
+
+#vinyl-skin {
+    background-size: cover !important;
+    background-position: center !important;
+    z-index: 11 !important;
+    display: none;
+}
+
+/* Frosted Glass Bagian Tengah Kaset */
+ytmusic-player::after {
+    content: '';
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 20% !important;
+    aspect-ratio: 1 / 1 !important;
+    background: radial-gradient(circle, #111 12%, rgba(255, 255, 255, 0.4) 15%, rgba(255, 255, 255, 0.1) 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-radius: 50% !important;
+    border: 3px solid rgba(255, 255, 255, 0.7) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2) !important;
+    z-index: 999 !important;
+    pointer-events: none !important;
+}
+
+/* =========================================
+   2. KASET MINI (PiP Mengambang di Pojok)
+========================================= */
+#pip-vinyl {
+    position: fixed !important;
+    bottom: 110px !important;
+    right: 30px !important;
+    width: 230px !important;
+    height: 230px !important;
+    border-radius: 50% !important;
+
+    /* GAYA BARU: Kaca Blur Pinggiran PiP */
+    background: rgba(20, 20, 20, 0.3) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 2px solid rgba(0, 0, 0, 0.8) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.1) !important;
+
+    z-index: 999999 !important;
+    display: none;
+    cursor: pointer !important;
+    transition: transform 0.2s ease !important;
+}
+
+#pip-vinyl:hover {
+    transform: scale(1.05) !important;
+}
+
+#pip-vinyl.active {
+    display: block !important;
+}
+
+/* INNER SKIN PiP (Agar pinggiran PiP juga terlihat kacanya) */
+#pip-skin {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 90% !important;
+    height: 90% !important;
+    border-radius: 50% !important;
+    background-size: cover !important;
+    background-position: center !important;
+    transform-origin: center center !important;
+    animation: spinCenter var(--spin-speed, 6s) linear infinite !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8) !important;
+    z-index: 10 !important;
+}
+
+/* Frosted Glass Tengah Kaset Mini */
+#pip-vinyl::after {
+    content: '';
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 25% !important;
+    aspect-ratio: 1 / 1 !important;
+    background: radial-gradient(circle, #111 12%, rgba(255, 255, 255, 0.4) 15%, rgba(255, 255, 255, 0.1) 100%) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border-radius: 50% !important;
+    border: 2px solid rgba(255, 255, 255, 0.7) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2) !important;
+    pointer-events: none !important;
+    z-index: 12 !important;
+    /* Harus di atas pip-skin */
+}
+
+/* =========================================
+   3. ANIMASI & PAUSE
+========================================= */
+@keyframes spinCenter {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+ytmusic-player.is-paused video,
+ytmusic-player.is-paused img,
+ytmusic-player.is-paused #vinyl-skin,
+.pip-paused #pip-skin {
+    animation-play-state: paused !important;
+}
+
+.hide-video video,
+.hide-video img {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
