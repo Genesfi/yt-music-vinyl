@@ -1,5 +1,5 @@
 let currentSongTitle = "";
-let storedSkinBg = null;
+let activeCoverUrl = null;
 
 function applyVinylEffect() {
     const player = document.querySelector('ytmusic-player');
@@ -15,14 +15,12 @@ function applyVinylEffect() {
         player.appendChild(skinEl);
     }
 
-    // Pembuatan struktur baru Kaset Mini (Ada wadah, ada isian)
     let pipVinyl = document.getElementById('pip-vinyl');
     let pipSkin = document.getElementById('pip-skin');
     if (!pipVinyl) {
         pipVinyl = document.createElement('div');
         pipVinyl.id = 'pip-vinyl';
 
-        // Isian gambarnya dipisah agar wadah luarnya bisa jadi kaca
         pipSkin = document.createElement('div');
         pipSkin.id = 'pip-skin';
         pipVinyl.appendChild(pipSkin);
@@ -47,6 +45,22 @@ function applyVinylEffect() {
     }
 
     let newSongTitle = titleElement ? titleElement.innerText : "";
+    if (newSongTitle !== currentSongTitle) {
+        currentSongTitle = newSongTitle;
+        activeCoverUrl = null; // Reset saat ganti lagu
+    }
+
+    // PERBAIKAN: HANYA ambil dari thumbnail pojok kiri bawah. 
+    // Thumbnail ini tidak pernah hilang meskipun videonya sedang jalan.
+    const thumbImg = document.querySelector('ytmusic-player-bar img');
+    if (thumbImg && thumbImg.src && thumbImg.src.startsWith('http')) {
+        let src = thumbImg.src;
+        // Paksa URL-nya berubah jadi resolusi HD (1080p) biar piringannya gak buram
+        if (src.match(/w\d+-h\d+/)) {
+            src = src.replace(/w\d+-h\d+/, 'w1080-h1080');
+        }
+        activeCoverUrl = src;
+    }
 
     chrome.storage.sync.get(['videoOn', 'spinSpeed'], (result) => {
         let speed = result.spinSpeed || 6;
@@ -55,30 +69,11 @@ function applyVinylEffect() {
         const isVideoOff = (result.videoOn === false);
         const isMinimized = player.getAttribute('player-ui-state') === 'MINIPLAYER';
 
-        if (newSongTitle !== currentSongTitle) {
-            currentSongTitle = newSongTitle;
-            storedSkinBg = null;
-        }
-
-        let hdThumbUrl = null;
-        const thumb = document.querySelector('ytmusic-player-bar img');
-        if (thumb && thumb.src && thumb.src.includes('http')) {
-            hdThumbUrl = thumb.src.replace(/w\d+-h\d+/, 'w1080-h1080');
-        }
-
-        if (!storedSkinBg) {
-            if (video && video.readyState >= 2 && !video.paused) {
-                try {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                    storedSkinBg = canvas.toDataURL('image/jpeg');
-                } catch (e) { }
-            }
-            if (!storedSkinBg && hdThumbUrl) storedSkinBg = hdThumbUrl;
-
-            if (storedSkinBg) {
-                skinEl.style.setProperty('background-image', `url("${storedSkinBg}")`, 'important');
+        // Terapkan gambar ke piringan utama dan piringan kecil (PiP)
+        if (activeCoverUrl) {
+            skinEl.style.setProperty('background-image', `url("${activeCoverUrl}")`, 'important');
+            if (pipSkin) {
+                pipSkin.style.setProperty('background-image', `url("${activeCoverUrl}")`, 'important');
             }
         }
 
@@ -92,11 +87,6 @@ function applyVinylEffect() {
 
         if (isMinimized) {
             pipVinyl.classList.add('active');
-            const pipBg = hdThumbUrl || storedSkinBg;
-            if (pipBg && pipSkin) {
-                // Terapkan background ke skin dalam, bukan ke wadah luarnya
-                pipSkin.style.setProperty('background-image', `url("${pipBg}")`, 'important');
-            }
         } else {
             pipVinyl.classList.remove('active');
         }
@@ -106,6 +96,5 @@ function applyVinylEffect() {
 setInterval(applyVinylEffect, 300);
 
 chrome.storage.onChanged.addListener((changes) => {
-    if (changes.videoOn) storedSkinBg = null;
     if (changes.spinSpeed) document.documentElement.style.setProperty('--spin-speed', `${changes.spinSpeed.newValue}s`);
 });
