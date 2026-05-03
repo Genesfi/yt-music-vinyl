@@ -15,12 +15,33 @@ ytmusic-player {
     backdrop-filter: blur(15px) !important;
     -webkit-backdrop-filter: blur(15px) !important;
     border: 2px solid rgba(0, 0, 0, 0.8) !important;
-    /* Batasan hitam tipis elegan */
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1) !important;
 
     overflow: hidden !important;
     clip-path: circle(50% at 50% 50%) !important;
     transition: opacity 0.3s ease !important;
+}
+
+/* =========================================
+   FIX MOBILE: Kaset terpotong di portrait mode
+   ytmusic-player di mobile punya height tetap,
+   jadi kita paksa dia jadi square dulu via JS hook,
+   tapi dari CSS kita batasi max-width pakai vmin
+   biar ga overflow dari container tingginya.
+========================================= */
+@media (max-width: 768px) {
+    ytmusic-player {
+        max-width: 80vmin !important;
+        width: 80vmin !important;
+        height: 80vmin !important;
+        /* paksa square di mobile */
+        aspect-ratio: 1 / 1 !important;
+        /* pastikan tidak keluar dari layar */
+        max-height: 80vmin !important;
+        /* center secara horizontal */
+        display: block !important;
+        margin: 0 auto !important;
+    }
 }
 
 /* Sembunyikan wujud kaset raksasa saat di-minimize */
@@ -58,7 +79,6 @@ ytmusic-player img,
     z-index: 10 !important;
     transform-origin: center center !important;
     animation: spinCenter var(--spin-speed, 6s) linear infinite !important;
-    /* Tambahan shadow dalam untuk memisahkan gambar dengan bingkai kaca */
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.8) !important;
 }
 
@@ -99,7 +119,6 @@ ytmusic-player::after {
     height: 230px !important;
     border-radius: 50% !important;
 
-    /* GAYA BARU: Kaca Blur Pinggiran PiP */
     background: rgba(20, 20, 20, 0.3) !important;
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
@@ -112,6 +131,16 @@ ytmusic-player::after {
     transition: transform 0.2s ease !important;
 }
 
+/* PiP lebih kecil di mobile agar tidak nutupin konten */
+@media (max-width: 768px) {
+    #pip-vinyl {
+        width: 130px !important;
+        height: 130px !important;
+        bottom: 80px !important;
+        right: 15px !important;
+    }
+}
+
 #pip-vinyl:hover {
     transform: scale(1.05) !important;
 }
@@ -120,7 +149,6 @@ ytmusic-player::after {
     display: block !important;
 }
 
-/* INNER SKIN PiP (Agar pinggiran PiP juga terlihat kacanya) */
 #pip-skin {
     position: absolute !important;
     top: 50% !important;
@@ -153,7 +181,6 @@ ytmusic-player::after {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2) !important;
     pointer-events: none !important;
     z-index: 12 !important;
-    /* Harus di atas pip-skin */
 }
 
 /* =========================================
