@@ -96,7 +96,24 @@ function applyVinylEffect() {
         activeCoverUrl = src;
     }
 
-    chrome.storage.sync.get(['videoOn', 'spinSpeed'], (result) => {
+    chrome.storage.sync.get(['videoOn', 'spinSpeed', 'vinylEnabled'], (result) => {
+        // === LOGIKA MASTER ENABLE/DISABLE (BARU) ===
+        let isExtensionEnabled = result.vinylEnabled !== false;
+
+        if (isExtensionEnabled) {
+            document.body.classList.add('vinyl-active');
+        } else {
+            document.body.classList.remove('vinyl-active');
+
+            // Bersihkan gaya secara real-time saat dimatikan
+            if (skinEl) skinEl.style.display = 'none';
+            if (pipVinyl) pipVinyl.classList.remove('active');
+            player.classList.remove('hide-video');
+            if (isMobile()) player.style.cssText = ""; // Hapus paksaan ukuran di mobile
+            return; // Berhenti di sini, jangan proses efek vinyl
+        }
+
+        // === LOGIKA EFEK VINYL LAMA ===
         let speed = result.spinSpeed || 6;
         document.documentElement.style.setProperty('--spin-speed', `${speed}s`);
 
