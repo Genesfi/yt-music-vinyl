@@ -1,5 +1,6 @@
 let currentSongTitle = "";
 let activeCoverUrl = null;
+let sizeObserver = null;
 
 function isMobile() {
     return window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -20,6 +21,40 @@ function isPlayerPage() {
     return window.location.pathname.includes('/watch');
 }
 
+// Hapus inline height/width yang di-inject YTM saat transisi lagu
+// Tapi JANGAN hapus kalau kita sendiri yang set (mobile fix pakai px juga, 
+// jadi kita skip kalau isMobile dan nilai-nya sesuai yang kita set)
+function cleanPlayerInlineSize(player) {
+    if (isMobile()) {
+        // Di mobile, kita yang set inline size — jangan hapus, update saja
+        fixMobilePlayerSize(player);
+        return;
+    }
+    // Di desktop, CSS extension yang handle — hapus semua inline size agar CSS bisa kerja
+    ['width', 'height', 'max-width', 'max-height', 'min-width', 'min-height'].forEach(prop => {
+        player.style.removeProperty(prop);
+    });
+}
+
+// Pasang observer khusus untuk mengawasi perubahan inline style pada player
+function watchPlayerStyle(player) {
+    if (sizeObserver) sizeObserver.disconnect();
+
+    sizeObserver = new MutationObserver(() => {
+        // YTM baru saja mengubah style player — bersihkan inline size constraint-nya
+        chrome.storage.sync.get(['vinylEnabled'], (result) => {
+            if (result.vinylEnabled === false) return;
+            // Disconnect sementara agar tidak loop
+            sizeObserver.disconnect();
+            cleanPlayerInlineSize(player);
+            // Reconnect setelah selesai
+            sizeObserver.observe(player, { attributes: true, attributeFilter: ['style'] });
+        });
+    });
+
+    sizeObserver.observe(player, { attributes: true, attributeFilter: ['style'] });
+}
+
 function applyVinylEffect() {
     const player = document.querySelector('ytmusic-player');
     const video = document.querySelector('video');
@@ -27,16 +62,19 @@ function applyVinylEffect() {
 
     if (!player) return;
 
+    // Pasang size watcher sekali saja
+    if (!sizeObserver) {
+        watchPlayerStyle(player);
+    }
+
     // === MOBILE: Sembunyikan kaset utama kalau bukan halaman /watch ===
     if (isMobile()) {
         if (!isPlayerPage()) {
-            // Bukan halaman player — sembunyikan kaset utama, jangan tampilkan PiP
             player.style.setProperty('display', 'none', 'important');
             const pipVinyl = document.getElementById('pip-vinyl');
             if (pipVinyl) pipVinyl.classList.remove('active');
-            return; // Tidak perlu lanjut
+            return;
         } else {
-            // Halaman player — tampilkan kaset utama, fix ukurannya
             player.style.removeProperty('display');
             fixMobilePlayerSize(player);
         }
@@ -97,29 +135,23 @@ function applyVinylEffect() {
     }
 
     chrome.storage.sync.get(['videoOn', 'spinSpeed', 'vinylEnabled'], (result) => {
-        // === LOGIKA MASTER ENABLE/DISABLE (BARU) ===
         let isExtensionEnabled = result.vinylEnabled !== false;
 
         if (isExtensionEnabled) {
             document.body.classList.add('vinyl-active');
         } else {
             document.body.classList.remove('vinyl-active');
-
-            // Bersihkan gaya secara real-time saat dimatikan
             if (skinEl) skinEl.style.display = 'none';
             if (pipVinyl) pipVinyl.classList.remove('active');
             player.classList.remove('hide-video');
-            if (isMobile()) player.style.cssText = ""; // Hapus paksaan ukuran di mobile
-            return; // Berhenti di sini, jangan proses efek vinyl
+            if (isMobile()) player.style.cssText = "";
+            return;
         }
 
-        // === LOGIKA EFEK VINYL LAMA ===
         let speed = result.spinSpeed || 6;
         document.documentElement.style.setProperty('--spin-speed', `${speed}s`);
 
         const isVideoOff = (result.videoOn === false);
-
-        // Desktop: MINIPLAYER attribute | Mobile: tidak akan sampai sini kalau bukan /watch
         const isMinimized = !isMobile() && player.getAttribute('player-ui-state') === 'MINIPLAYER';
 
         if (activeCoverUrl) {
@@ -137,7 +169,6 @@ function applyVinylEffect() {
             skinEl.style.display = 'none';
         }
 
-        // PiP hanya untuk desktop minimize
         if (isMinimized) {
             pipVinyl.classList.add('active');
         } else {
