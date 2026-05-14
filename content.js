@@ -1,6 +1,7 @@
 let currentSongTitle = "";
 let activeCoverUrl = null;
 let sizeObserver = null;
+let isSettingSize = false;
 
 function isMobile() {
     return window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -9,50 +10,52 @@ function isMobile() {
 function fixMobilePlayerSize(player) {
     if (!isMobile()) return;
     const size = Math.min(window.innerWidth, window.innerHeight) * 0.80;
+    isSettingSize = true;
     player.style.setProperty('width', `${size}px`, 'important');
     player.style.setProperty('height', `${size}px`, 'important');
     player.style.setProperty('max-width', `${size}px`, 'important');
     player.style.setProperty('max-height', `${size}px`, 'important');
     player.style.setProperty('min-width', `${size}px`, 'important');
     player.style.setProperty('min-height', `${size}px`, 'important');
+    isSettingSize = false;
 }
 
 function isPlayerPage() {
     return window.location.pathname.includes('/watch');
 }
 
-// Hapus inline height/width yang di-inject YTM saat transisi lagu
-// Tapi JANGAN hapus kalau kita sendiri yang set (mobile fix pakai px juga, 
-// jadi kita skip kalau isMobile dan nilai-nya sesuai yang kita set)
 function cleanPlayerInlineSize(player) {
     if (isMobile()) {
-        // Di mobile, kita yang set inline size — jangan hapus, update saja
         fixMobilePlayerSize(player);
         return;
     }
-    // Di desktop, CSS extension yang handle — hapus semua inline size agar CSS bisa kerja
+    isSettingSize = true;
     ['width', 'height', 'max-width', 'max-height', 'min-width', 'min-height'].forEach(prop => {
         player.style.removeProperty(prop);
     });
+    isSettingSize = false;
 }
 
-// Pasang observer khusus untuk mengawasi perubahan inline style pada player
 function watchPlayerStyle(player) {
     if (sizeObserver) sizeObserver.disconnect();
 
     sizeObserver = new MutationObserver(() => {
-        // YTM baru saja mengubah style player — bersihkan inline size constraint-nya
+        if (isSettingSize) return;
         chrome.storage.sync.get(['vinylEnabled'], (result) => {
             if (result.vinylEnabled === false) return;
-            // Disconnect sementara agar tidak loop
             sizeObserver.disconnect();
             cleanPlayerInlineSize(player);
-            // Reconnect setelah selesai
             sizeObserver.observe(player, { attributes: true, attributeFilter: ['style'] });
         });
     });
 
     sizeObserver.observe(player, { attributes: true, attributeFilter: ['style'] });
+}
+
+// Cek apakah lagu saat ini punya video sungguhan (bukan cover-only)
+function playerHasVideo() {
+    const video = document.querySelector('ytmusic-player video');
+    return !!video && video.readyState > 0 && video.videoWidth > 0;
 }
 
 function applyVinylEffect() {
@@ -62,7 +65,6 @@ function applyVinylEffect() {
 
     if (!player) return;
 
-    // Pasang size watcher sekali saja
     if (!sizeObserver) {
         watchPlayerStyle(player);
     }
@@ -70,12 +72,16 @@ function applyVinylEffect() {
     // === MOBILE: Sembunyikan kaset utama kalau bukan halaman /watch ===
     if (isMobile()) {
         if (!isPlayerPage()) {
+            isSettingSize = true;
             player.style.setProperty('display', 'none', 'important');
+            isSettingSize = false;
             const pipVinyl = document.getElementById('pip-vinyl');
             if (pipVinyl) pipVinyl.classList.remove('active');
             return;
         } else {
+            isSettingSize = true;
             player.style.removeProperty('display');
+            isSettingSize = false;
             fixMobilePlayerSize(player);
         }
     }
@@ -153,6 +159,7 @@ function applyVinylEffect() {
 
         const isVideoOff = (result.videoOn === false);
         const isMinimized = !isMobile() && player.getAttribute('player-ui-state') === 'MINIPLAYER';
+        const hasTrueVideo = playerHasVideo();
 
         if (activeCoverUrl) {
             skinEl.style.setProperty('background-image', `url("${activeCoverUrl}")`, 'important');
@@ -161,7 +168,10 @@ function applyVinylEffect() {
             }
         }
 
-        if (isVideoOff) {
+        // Tampilkan vinyl-skin jika:
+        // 1. User pilih hide video (videoOn = false), ATAU
+        // 2. Lagu tidak punya video sama sekali (cover-only)
+        if (isVideoOff || !hasTrueVideo) {
             player.classList.add('hide-video');
             skinEl.style.display = 'block';
         } else {

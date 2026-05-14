@@ -9,21 +9,42 @@ body.vinyl-active {
         border-radius: 50% !important;
         width: 100% !important;
         max-width: 65vh !important;
-        /* FIX: min-height agar player tidak collapse saat transisi video->cover */
         min-height: min(65vh, 65vw) !important;
         height: auto !important;
         margin: 0 auto !important;
         position: relative !important;
 
+        /* Glass effect background */
         background: rgba(20, 20, 20, 0.3) !important;
-        backdrop-filter: blur(15px) !important;
-        -webkit-backdrop-filter: blur(15px) !important;
-        border: 2px solid rgba(0, 0, 0, 0.8) !important;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
 
-        overflow: hidden !important;
+        /* Wajib agar kotak bawaan YT kepotong sempurna */
         clip-path: circle(50% at 50% 50%) !important;
-        transition: opacity 0.3s ease !important;
+
+        /* Transisi super enteng tanpa filter */
+        transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    }
+
+    /* TRIK: Cincin Kaca Mulus (Menutupi pinggiran kasar clip-path) */
+    ytmusic-player::before {
+        content: '';
+        position: absolute !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 50% !important;
+        /* Border hitam tipis aja, tanpa animasi glow putih */
+        border: 2px solid rgba(0, 0, 0, 0.8) !important;
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.1) !important;
+        pointer-events: none !important;
+        z-index: 998 !important;
+    }
+
+    /* Efek keangkat saat hover (No Lag / CPU Friendly / Clean) */
+    ytmusic-player:hover {
+        transform: scale(1.02) !important;
     }
 
     /* =========================================
@@ -49,7 +70,6 @@ body.vinyl-active {
         transform: scale(0) !important;
     }
 
-    /* Wrapper internal — biarkan tetap ada tapi jangan tampil sebagai konten */
     ytmusic-player #song-image,
     ytmusic-player yt-img-shadow,
     ytmusic-player #video-player,
@@ -79,6 +99,22 @@ body.vinyl-active {
         transform-origin: center center !important;
         animation: spinCenter var(--spin-speed, 6s) linear infinite !important;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.8) !important;
+        background-color: transparent !important;
+    }
+
+    ytmusic-player>*:not(video):not(img):not(#vinyl-skin) {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    ytmusic-player .html5-video-player,
+    ytmusic-player .html5-video-container,
+    ytmusic-player #movie_player,
+    ytmusic-player #player-container,
+    ytmusic-player #player-container-inner,
+    ytmusic-player ytmusic-player-impl {
+        background: transparent !important;
+        background-color: transparent !important;
     }
 
     #vinyl-skin {
@@ -88,7 +124,7 @@ body.vinyl-active {
         display: none;
     }
 
-    /* Frosted Glass Bagian Tengah Kaset */
+    /* Frosted Glass Bagian Tengah Kaset Utama */
     ytmusic-player::after {
         content: '';
         position: absolute !important;
@@ -98,11 +134,11 @@ body.vinyl-active {
         width: 20% !important;
         aspect-ratio: 1 / 1 !important;
         background: radial-gradient(circle, #111 12%, rgba(255, 255, 255, 0.4) 15%, rgba(255, 255, 255, 0.1) 100%) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
         border-radius: 50% !important;
-        border: 3px solid rgba(255, 255, 255, 0.7) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2) !important;
+        border: 2px solid rgba(255, 255, 255, 0.7) !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2) !important;
         z-index: 999 !important;
         pointer-events: none !important;
     }
@@ -117,17 +153,16 @@ body.vinyl-active {
         width: 230px !important;
         height: 230px !important;
         border-radius: 50% !important;
-
         background: rgba(20, 20, 20, 0.3) !important;
         backdrop-filter: blur(12px) !important;
         -webkit-backdrop-filter: blur(12px) !important;
         border: 2px solid rgba(0, 0, 0, 0.8) !important;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.1) !important;
 
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.1) !important;
         z-index: 999999 !important;
         display: none;
         cursor: pointer !important;
-        transition: transform 0.2s ease !important;
+        transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }
 
     @media (max-width: 768px) {
@@ -162,7 +197,6 @@ body.vinyl-active {
         z-index: 10 !important;
     }
 
-    /* Frosted Glass Tengah Kaset Mini */
     #pip-vinyl::after {
         content: '';
         position: absolute !important;
