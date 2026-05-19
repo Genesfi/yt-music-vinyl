@@ -2,7 +2,96 @@ let currentSongTitle = "";
 let activeCoverUrl = null;
 let sizeObserver = null;
 let isSettingSize = false;
+// === Variabel untuk Visualizer Audio (Beat Pulse) ===
+let isBeatEnabled = false;
+let audioCtx = null;
+let analyser = null;
+let audioSource = null;
+let dataArray = null;
+let beatAnimationId = null;
+let beatMin = 1.00;
+let beatMax = 1.12;
+let beatSens = 1.5;
+// Variabel baru untuk Transient Detection
+let movingAverage = 0;
+let currentVisualScale = 1.0;
 
+function setupAudioVisualizer() {
+    const video = document.querySelector('video');
+    if (!video) return;
+
+    if (!audioCtx) {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256; // Diperbesar agar resolusi frekuensi lebih detail
+            audioSource = audioCtx.createMediaElementSource(video);
+            audioSource.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        } catch (e) {
+            console.log("AudioContext sudah terhubung ke node lain.", e);
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function loopBeat() {
+    if (!isBeatEnabled || !analyser) {
+        document.documentElement.style.setProperty('--beat-scale', '1');
+        const player = document.querySelector('ytmusic-player');
+        if (player) player.classList.remove('beat-active');
+        if (beatAnimationId) cancelAnimationFrame(beatAnimationId);
+        beatAnimationId = null;
+        return;
+    }
+
+    analyser.getByteFrequencyData(dataArray);
+
+    // 1. Ambil nilai tertinggi dari area sub-bass & kick drum
+    let bassPeak = Math.max(dataArray[0], dataArray[1]);
+
+    // 2. AUTO-THRESHOLD (Rahasia utama!)
+    // Melacak "volume rata-rata" dari instrumen yang sedang main.
+    // Instrumen panjang/konstan akan dianggap sebagai background.
+    movingAverage = (movingAverage * 0.93) + (bassPeak * 0.07);
+
+    // 3. TRANSIENT DETECTION dengan Sensitivity UI
+    let beatIntensity = 0;
+    if (bassPeak > movingAverage + 15) {
+        let spike = bassPeak - movingAverage;
+
+        // Normalisasi
+        beatIntensity = Math.min(spike / 80, 1.0);
+
+        // Exaggerate lalu KALIKAN dengan slider Sensitivity dari UI
+        beatIntensity = Math.pow(beatIntensity, 1.5) * beatSens;
+
+        // Kunci agar tidak melebihi 100% (1.0) meskipun sensitivitas di-set 4.0x
+        beatIntensity = Math.min(beatIntensity, 1.0);
+    }
+
+    let safeMax = Math.min(beatMax, 1.30);
+    let targetScale = beatMin + (beatIntensity * (safeMax - beatMin));
+
+    // 4. ANIMASI GAYA PEGAS (JS EASING)
+    // Kalau ada beat: Kaset nendang/mengembang sangat cepat
+    if (targetScale > currentVisualScale) {
+        currentVisualScale += (targetScale - currentVisualScale) * 0.7; // Kecepatan ngembang 70% per frame
+    }
+    // Kalau beat selesai: Kaset kempes pelan-pelan dan mulus
+    else {
+        currentVisualScale += (targetScale - currentVisualScale) * 0.15; // Kecepatan kempes 15% per frame
+    }
+
+    document.documentElement.style.setProperty('--beat-scale', currentVisualScale.toFixed(3));
+    const player = document.querySelector('ytmusic-player');
+    if (player) player.classList.add('beat-active');
+
+    beatAnimationId = requestAnimationFrame(loopBeat);
+}
 function isMobile() {
     return window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent);
 }
@@ -140,7 +229,7 @@ function applyVinylEffect() {
         activeCoverUrl = src;
     }
 
-    chrome.storage.sync.get(['videoOn', 'spinSpeed', 'vinylEnabled'], (result) => {
+    chrome.storage.sync.get(['videoOn', 'spinSpeed', 'vinylEnabled', 'vinylBeat', 'beatMin', 'beatMax'], (result) => {
         let isExtensionEnabled = result.vinylEnabled !== false;
 
         if (isExtensionEnabled) {
@@ -183,6 +272,24 @@ function applyVinylEffect() {
             pipVinyl.classList.add('active');
         } else {
             pipVinyl.classList.remove('active');
+        }
+        // Sinkronisasi nilai range slider secara real-time dari storage ke engine
+        beatMin = result.beatMin !== undefined ? result.beatMin : 1.00;
+        beatMax = result.beatMax !== undefined ? result.beatMax : 1.12;
+        beatSens = result.beatSens !== undefined ? result.beatSens : 1.5;
+        // === LOGIKA MENGHIDUPKAN/MEMATIKAN BEAT PULSE ===
+        let wasBeatEnabled = isBeatEnabled;
+        isBeatEnabled = result.vinylBeat === true;
+
+        if (isBeatEnabled && !wasBeatEnabled) {
+            setupAudioVisualizer();
+            if (!beatAnimationId) loopBeat();
+        } else if (!isBeatEnabled && wasBeatEnabled) {
+            // Mematikan efek kalau user uncheck di popup
+            if (beatAnimationId) cancelAnimationFrame(beatAnimationId);
+            beatAnimationId = null;
+            document.documentElement.style.setProperty('--beat-scale', '1');
+            player.classList.remove('beat-active');
         }
     });
 }

@@ -48,6 +48,19 @@ body.vinyl-active {
     }
 
     /* =========================================
+       EFEK DETAK (BEAT PULSE)
+    ========================================= */
+    ytmusic-player.beat-active {
+        transform: scale(var(--beat-scale, 1)) !important;
+        /* Animasi dimatikan di CSS karena sekarang di-handle 100% oleh JavaScript */
+        transition: none !important;
+    }
+
+    ytmusic-player.beat-active:hover {
+        transform: scale(calc(var(--beat-scale, 1) + 0.02)) !important;
+    }
+
+    /* =========================================
        FIX MOBILE: Kaset terpotong di portrait mode
     ========================================= */
     @media (max-width: 768px) {
