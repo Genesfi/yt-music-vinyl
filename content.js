@@ -39,10 +39,14 @@ function setupAudioVisualizer() {
 }
 
 function loopBeat() {
-    if (!isBeatEnabled || !analyser) {
-        document.documentElement.style.setProperty('--beat-scale', '1');
-        const player = document.querySelector('ytmusic-player');
-        if (player) player.classList.remove('beat-active');
+    const player = document.querySelector('ytmusic-player');
+
+    // Kalau fitur mati, audio tidak ada, atau kaset tidak ditemukan di halaman
+    if (!isBeatEnabled || !analyser || !player) {
+        if (player) {
+            player.style.setProperty('--beat-scale', '1'); // Tembak langsung ke kaset
+            player.classList.remove('beat-active');
+        }
         if (beatAnimationId) cancelAnimationFrame(beatAnimationId);
         beatAnimationId = null;
         return;
@@ -86,9 +90,9 @@ function loopBeat() {
         currentVisualScale += (targetScale - currentVisualScale) * 0.15; // Kecepatan kempes 15% per frame
     }
 
-    document.documentElement.style.setProperty('--beat-scale', currentVisualScale.toFixed(3));
-    const player = document.querySelector('ytmusic-player');
-    if (player) player.classList.add('beat-active');
+    // Tembak CSS Variable eksklusif hanya ke elemen kaset, jangan ke seluruh halaman
+    player.style.setProperty('--beat-scale', currentVisualScale.toFixed(3));
+    player.classList.add('beat-active');
 
     beatAnimationId = requestAnimationFrame(loopBeat);
 }
@@ -243,7 +247,7 @@ function applyVinylEffect() {
             return;
         }
 
-        let speed = result.spinSpeed || 6;
+        let speed = result.spinSpeed || 10;
         document.documentElement.style.setProperty('--spin-speed', `${speed}s`);
 
         const isVideoOff = (result.videoOn === false);
@@ -288,7 +292,7 @@ function applyVinylEffect() {
             // Mematikan efek kalau user uncheck di popup
             if (beatAnimationId) cancelAnimationFrame(beatAnimationId);
             beatAnimationId = null;
-            document.documentElement.style.setProperty('--beat-scale', '1');
+            player.style.setProperty('--beat-scale', '1'); // Diubah ke player
             player.classList.remove('beat-active');
         }
     });

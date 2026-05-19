@@ -83,15 +83,15 @@ resetBtn.addEventListener('click', () => {
     sensSlider.value = 1.5;
     sensValue.innerText = "1.5";
 
-    slider.value = 6;
-    speedValue.innerText = "6";
+    slider.value = 10;
+    speedValue.innerText = "10";
 
     // 2. Simpan ke storage chrome
     chrome.storage.sync.set({
         beatMin: 1.00,
         beatMax: 1.12,
         beatSens: 1.5,
-        spinSpeed: 6
+        spinSpeed: 10
     });
 
     // Opsional: Efek visual diklik biar kerasa
